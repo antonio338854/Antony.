@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tony AI</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Highlight.js CDN para destaque de sintaxe -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Incluir linguagens específicas do Highlight.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script> <!-- HTML é xml no highlight.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/markdown.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Evita scroll na tela principal */
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #1f2937; /* gray-800 */
+            border-radius: 10px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background-color: #6366f1; /* indigo-500 */
+            border-radius: 10px;
+            border: 2px solid #1f2937; /* gray-800 */
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-pulse-fast {
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+
+        /* Estilo para o iframe de preview HTML */
+        #html-preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: white; /* Fundo branco para o conteúdo HTML */
+            border-radius: 0 0 0.75rem 0.75rem; /* rounded-b-xl */
+        }
+
+        /* Estilos para o spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-gray-100">
+
+    <!-- Notificação Customizada -->
+    <div id="custom-notification" class="fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg flex items-center space-x-2 transition-transform duration-300 transform translate-x-full hidden">
+        <svg id="notification-icon" class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20"></svg>
+        <span id="notification-message"></span>
+    </div>
+
+    <!-- Header -->
+    <header class="flex items-center justify-between p-4 bg-gray-800 shadow-xl rounded-b-xl border-b border-indigo-700">
+        <h1 class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600 tracking-wide">Tony AI</h1>
+        <div class="flex space-x-3">
+            <button id="chat-view-btn" class="p-3 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg bg-indigo-600 text-white" aria-label="Chat">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+            <button id="settings-view-btn" class="p-3 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg bg-gray-700 text-gray-300 hover:bg-indigo-500 hover:text-white" aria-label="Configurações">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.78 1.28a2 2 0 0 0 .73 2.73l.15.08a2 2 0 0 1 1 1.73v.44a2 2 0 0 0 2 2v.18a2 2 0 0 1 1 1.73l.43.25a2 2 0 0 1 2 0l.15-.08a2 2 0 0 0 2.73.73l.78-1.28a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.44a2 2 0 0 0-2-2v-.18a2 2 0 0 1-1-1.73l-.43-.25a2 2 0 0 1-2 0l-.15.08a2 2 0 0 0-2.73-.73L2 7.28a2 2 0 0 0 .73-2.73l.15-.08a2 2 0 0 1 1-1.73V4a2 2 0 0 0 2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button id="new-conversation-btn" class="p-3 rounded-full bg-red-600 text-white shadow-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105" aria-label="Nova Conversa">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="flex-1 overflow-hidden p-6">
+        <!-- Chat View -->
+        <div id="chat-view" class="flex flex-col h-full bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto mb-6 p-4 rounded-xl bg-gray-900 border border-gray-700 scrollbar-thin">
+                <div class="text-center text-gray-400 mt-10 text-lg font-light">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square mx-auto mb-4 text-indigo-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    Bem-vindo ao Tony AI! Digite sua primeira mensagem ou explore as configurações.
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <form id="chat-form" class="flex items-center space-x-4 bg-gray-700 p-4 rounded-xl shadow-inner">
+                <input
+                    type="text"
+                    id="user-input"
+                    placeholder="Digite sua mensagem aqui..."
+                    class="flex-1 p-3 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-800 text-gray-100 placeholder-gray-400 shadow-sm transition-all duration-200"
+                />
+                <label for="file-upload" class="cursor-pointer p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105" aria-label="Anexar arquivo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+                </label>
+                <input
+                    id="file-upload"
+                    type="file"
+                    class="hidden"
+                />
+                <span id="file-uploaded-name" class="text-sm text-gray-400 font-medium truncate max-w-[100px]"></span>
+                <button
+                    type="submit"
+                    id="send-button"
+                    class="p-3 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 transition-all duration-300 transform hover:scale-105"
+                    aria-label="Enviar mensagem"
+                >
+                    <svg id="send-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send"><path d="m22 2-7 20-4-9-9-4 20-7Z"/><path d="M15 15l4-4"/></svg>
+                    <div id="loading-spinner" class="spinner hidden"></div>
+                </button>
+            </form>
+            <p id="user-id-display" class="text-xs text-gray-500 mt-3 text-center opacity-70">
+                ID do Usuário: <span class="font-mono text-gray-400"></span>
+            </p>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="hidden flex-col h-full bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
+            <h2 class="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600">Configurações do Tony AI</h2>
+            <div class="mb-8">
+                <label for="system-prompt-textarea" class="block text-lg font-medium text-gray-200 mb-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-code inline-block h-5 w-5 mr-2 text-indigo-400"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                    System Prompt (Instruções para o Tony AI):
+                </label>
+                <textarea
+                    id="system-prompt-textarea"
+                    rows="10"
+                    placeholder="Ex: Você é um assistente prestativo e amigável. Responda de forma concisa e direta, focando em soluções práticas."
+                    class="w-full p-4 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-900 text-gray-100 placeholder-gray-500 resize-y shadow-inner transition-all duration-200"
+                ></textarea>
+                <p class="text-sm text-gray-400 mt-2">
+                    Este prompt define o comportamento e a persona do Tony AI para todas as suas conversas. Use-o para guiar as respostas do assistente.
+                </p>
+            </div>
+            <button id="save-system-prompt-btn" class="px-6 py-3 bg-green-600 text-white rounded-lg shadow-xl hover:bg-green-700 transition-all duration-300 transform hover:scale-105 self-start flex items-center space-x-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-settings h-5 w-5"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.78 1.28a2 2 0 0 0 .73 2.73l.15.08a2 2 0 0 1 1 1.73v.44a2 2 0 0 0 2 2v.18a2 2 0 0 1 1 1.73l.43.25a2 2 0 0 1 2 0l.15-.08a2 2 0 0 0 2.73.73l.78-1.28a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.73v-.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l-.43-.25a2 2 0 0 1-2 0l-.15.08a2 2 0 0 0-2.73-.73L2 7.28a2 2 0 0 0 .73-2.73l.15-.08a2 2 0 0 1 1-1.73V4a2 2 0 0 0 2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>Salvar System Prompt</span>
+            </button>
+            <p id="settings-user-id-display" class="text-xs text-gray-500 mt-6 text-center opacity-70">
+                Seu ID de Usuário: <span class="font-mono text-gray-400"></span>
+            </p>
+        </div>
+    </main>
+
+    <!-- Modal para Preview de HTML -->
+    <div id="html-preview-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-gray-800 rounded-xl shadow-2xl w-full max-w-3xl h-[80vh] flex flex-col border border-gray-700">
+            <div class="flex justify-between items-center p-4 bg-gray-700 rounded-t-xl border-b border-gray-600">
+                <h3 class="text-xl font-bold text-white">Preview HTML</h3>
+                <button id="close-html-preview-btn" class="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-all duration-200" aria-label="Fechar preview">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </button>
+            </div>
+            <iframe id="html-preview-iframe" title="HTML Preview" sandbox="allow-scripts allow-same-origin"></iframe>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, addDoc, deleteDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // Variáveis globais fornecidas pelo ambiente Canvas
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId = null;
+        let isAuthReady = false;
+        let chatMessages = [];
+        let systemPrompt = '';
+        let isLoading = false;
+        let fileToUpload = null;
+        let fileUploadedName = '';
+
+        // Elementos do DOM
+        const chatView = document.getElementById('chat-view');
+        const settingsView = document.getElementById('settings-view');
+        const chatViewBtn = document.getElementById('chat-view-btn');
+        const settingsViewBtn = document.getElementById('settings-view-btn');
+        const newConversationBtn = document.getElementById('new-conversation-btn');
+        const chatMessagesDiv = document.getElementById('chat-messages');
+        const userInputField = document.getElementById('user-input');
+        const chatForm = document.getElementById('chat-form');
+        const sendButton = document.getElementById('send-button');
+        const sendIcon = document.getElementById('send-icon');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const systemPromptTextarea = document.getElementById('system-prompt-textarea');
+        const saveSystemPromptBtn = document.getElementById('save-system-prompt-btn');
+        const fileUploadInput = document.getElementById('file-upload');
+        const fileUploadedNameSpan = document.getElementById('file-uploaded-name');
+        const userIdDisplay = document.getElementById('user-id-display').querySelector('span');
+        const settingsUserIdDisplay = document.getElementById('settings-user-id-display').querySelector('span');
+        const htmlPreviewModal = document.getElementById('html-preview-modal');
+        const htmlPreviewIframe = document.getElementById('html-preview-iframe');
+        const closeHtmlPreviewBtn = document.getElementById('close-html-preview-btn');
+        const customNotification = document.getElementById('custom-notification');
+        const notificationIcon = document.getElementById('notification-icon');
+        const notificationMessageSpan = document.getElementById('notification-message');
+
+        // --- Funções de UI ---
+        function showCustomNotification(message, type = 'success') {
+            notificationMessageSpan.textContent = message;
+            customNotification.classList.remove('hidden', 'bg-green-500', 'bg-red-500');
+            customNotification.classList.add('translate-x-0');
+
+            if (type === 'success') {
+                customNotification.classList.add('bg-green-500');
+                notificationIcon.innerHTML = `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>`; // CheckCircle
+            } else {
+                customNotification.classList.add('bg-red-500');
+                notificationIcon.innerHTML = `<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm0-6a1 1 0 00-1 1v3a1 1 0 002 0V9a1 1 0 00-1-1z" clip-rule="evenodd"/>`; // AlertCircle
+            }
+
+            setTimeout(() => {
+                customNotification.classList.remove('translate-x-0');
+                customNotification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    customNotification.classList.add('hidden');
+                }, 300); // Esconde o elemento após a transição
+            }, 3000);
+        }
+
+        function setView(viewName) {
+            if (viewName === 'chat') {
+                chatView.classList.remove('hidden');
+                chatView.classList.add('flex');
+                settingsView.classList.add('hidden');
+                settingsView.classList.remove('flex');
+                chatViewBtn.classList.add('bg-indigo-600', 'text-white');
+                chatViewBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-indigo-500', 'hover:text-white');
+                settingsViewBtn.classList.remove('bg-indigo-600', 'text-white');
+                settingsViewBtn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-indigo-500', 'hover:text-white');
+                scrollToBottom();
+            } else {
+                settingsView.classList.remove('hidden');
+                settingsView.classList.add('flex');
+                chatView.classList.add('hidden');
+                chatView.classList.remove('flex');
+                settingsViewBtn.classList.add('bg-indigo-600', 'text-white');
+                settingsViewBtn.classList.remove('bg-gray-700', 'text-gray-300', 'hover:bg-indigo-500', 'hover:text-white');
+                chatViewBtn.classList.remove('bg-indigo-600', 'text-white');
+                chatViewBtn.classList.add('bg-gray-700', 'text-gray-300', 'hover:bg-indigo-500', 'hover:text-white');
+            }
+        }
+
+        function setLoadingState(loading) {
+            isLoading = loading;
+            userInputField.disabled = loading;
+            sendButton.disabled = loading;
+            fileUploadInput.disabled = loading;
+            newConversationBtn.disabled = loading;
+            saveSystemPromptBtn.disabled = loading;
+
+            if (loading) {
+                sendIcon.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                sendIcon.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function scrollToBottom() {
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+        }
+
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                return true;
+            } catch (err) {
+                console.error('Falha ao copiar:', err);
+                return false;
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+
+        function runHtmlCode(htmlCode) {
+            htmlPreviewIframe.srcdoc = htmlCode;
+            htmlPreviewModal.classList.remove('hidden');
+        }
+
+        function renderMessageContent(messageText) {
+            const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+            let lastIndex = 0;
+            const parts = [];
+            let match;
+
+            while ((match = codeBlockRegex.exec(messageText)) !== null) {
+                const [fullMatch, lang, codeContent] = match;
+                const preCodeText = messageText.substring(lastIndex, match.index);
+
+                if (preCodeText) {
+                    const p = document.createElement('p');
+                    p.classList.add('whitespace-pre-wrap');
+                    p.textContent = preCodeText;
+                    parts.push(p);
+                }
+
+                const language = lang || 'plaintext';
+
+                const codeBlockContainer = document.createElement('div');
+                codeBlockContainer.classList.add('relative', 'my-2', 'rounded-lg', 'overflow-hidden', 'border', 'border-gray-700');
+
+                const header = document.createElement('div');
+                header.classList.add('flex', 'justify-between', 'items-center', 'bg-gray-700', 'p-2', 'text-xs', 'text-gray-300');
+                header.innerHTML = `<span class="font-mono">${language.toUpperCase()}</span>`;
+
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.classList.add('flex', 'space-x-2');
+
+                if (language === 'html') {
+                    const runBtn = document.createElement('button');
+                    runBtn.classList.add('flex', 'items-center', 'px-2', 'py-1', 'bg-green-600', 'hover:bg-green-700', 'text-white', 'rounded-md', 'text-xs', 'transition-all', 'duration-200');
+                    runBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play mr-1"><polygon points="5 3 19 12 5 21 5 3"/></svg> Executar HTML`;
+                    runBtn.onclick = () => runHtmlCode(codeContent);
+                    buttonsDiv.appendChild(runBtn);
+                }
+
+                const copyBtn = document.createElement('button');
+                copyBtn.classList.add('flex', 'items-center', 'px-2', 'py-1', 'bg-blue-600', 'hover:bg-blue-700', 'text-white', 'rounded-md', 'text-xs', 'transition-all', 'duration-200');
+                copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy mr-1"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2v2"/></svg> Copiar`;
+                copyBtn.onclick = () => {
+                    if (copyToClipboard(codeContent)) {
+                        showCustomNotification('Código copiado!', 'success');
+                    } else {
+                        showCustomNotification('Falha ao copiar código.', 'error');
+                    }
+                };
+                buttonsDiv.appendChild(copyBtn);
+
+                header.appendChild(buttonsDiv);
+                codeBlockContainer.appendChild(header);
+
+                const pre = document.createElement('pre');
+                const code = document.createElement('code');
+                code.className = `language-${language}`;
+                code.textContent = codeContent;
+                pre.appendChild(code);
+
+                // Aplicar estilos customizados para o highlight.js
+                pre.style.backgroundColor = 'transparent';
+                pre.style.padding = '1rem';
+                pre.style.borderRadius = '0 0 0.5rem 0.5rem';
+                pre.style.overflowX = 'auto';
+                pre.style.fontSize = '0.875rem'; // text-sm
+                code.style.fontFamily = 'Fira Code, monospace'; // Fonte monoespaçada para código
+
+                codeBlockContainer.appendChild(pre);
+                parts.push(codeBlockContainer);
+
+                lastIndex = match.index + fullMatch.length;
+            }
+
+            const remainingText = messageText.substring(lastIndex);
+            if (remainingText) {
+                const p = document.createElement('p');
+                p.classList.add('whitespace-pre-wrap');
+                p.textContent = remainingText;
+                parts.push(p);
+            }
+
+            return parts;
+        }
+
+        function displayMessages() {
+            chatMessagesDiv.innerHTML = ''; // Limpa as mensagens existentes
+            if (chatMessages.length === 0) {
+                chatMessagesDiv.innerHTML = `
+                    <div class="text-center text-gray-400 mt-10 text-lg font-light">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-message-square mx-auto mb-4 text-indigo-400"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        Bem-vindo ao Tony AI! Digite sua primeira mensagem ou explore as configurações.
+                    </div>
+                `;
+            } else {
+                chatMessages.forEach(msg => {
+                    const messageElement = document.createElement('div');
+                    messageElement.classList.add('mb-4', 'p-4', 'rounded-lg', 'max-w-[85%]', 'relative', 'shadow-md', 'animate-fade-in');
+
+                    if (msg.role === 'user') {
+                        messageElement.classList.add('bg-indigo-700', 'text-indigo-100', 'ml-auto', 'rounded-br-none');
+                    } else {
+                        messageElement.classList.add('bg-gray-700', 'text-gray-200', 'mr-auto', 'rounded-bl-none');
+                    }
+
+                    const roleText = document.createElement('p');
+                    roleText.classList.add('font-semibold', 'text-sm', 'mb-1', 'opacity-80');
+                    roleText.textContent = msg.role === 'user' ? 'Você' : 'Tony AI';
+                    messageElement.appendChild(roleText);
+
+                    const contentParts = renderMessageContent(msg.text);
+                    contentParts.forEach(part => messageElement.appendChild(part));
+
+                    if (msg.fileName) {
+                        const fileNameSpan = document.createElement('p');
+                        fileNameSpan.classList.add('text-xs', 'text-gray-400', 'mt-2', 'opacity-70');
+                        fileNameSpan.textContent = `(Arquivo: ${msg.fileName})`;
+                        messageElement.appendChild(fileNameSpan);
+                    }
+
+                    const timestampSpan = document.createElement('span');
+                    timestampSpan.classList.add('absolute', 'bottom-1', 'right-2', 'text-xs', 'text-gray-400', 'opacity-60');
+                    timestampSpan.textContent = msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString() : '';
+                    messageElement.appendChild(timestampSpan);
+
+                    chatMessagesDiv.appendChild(messageElement);
+                });
+                // Aplicar destaque de sintaxe a todos os blocos de código recém-adicionados
+                chatMessagesDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+            scrollToBottom();
+        }
+
+        // --- Funções de Lógica ---
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        settingsUserIdDisplay.textContent = userId;
+                    } else {
+                        userId = null;
+                        userIdDisplay.textContent = 'N/A';
+                        settingsUserIdDisplay.textContent = 'N/A';
+                    }
+                    isAuthReady = true;
+                    if (userId) {
+                        loadUserData();
+                    } else {
+                        showCustomNotification("Falha na autenticação. Algumas funcionalidades podem não funcionar.", "error");
+                    }
+                });
+            } catch (error) {
+                console.error("Erro ao inicializar Firebase ou autenticar:", error);
+                showCustomNotification("Erro ao iniciar o Tony AI. Tente recarregar a página.", "error");
+            }
+        }
+
+        function loadUserData() {
+            if (!db || !userId) return;
+
+            // Carregar System Prompt
+            const systemPromptDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings`, 'systemPromptDoc');
+            onSnapshot(systemPromptDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    systemPrompt = docSnap.data().prompt || '';
+                    systemPromptTextarea.value = systemPrompt;
+                } else {
+                    systemPrompt = '';
+                    systemPromptTextarea.value = '';
+                }
+            }, (error) => console.error("Erro ao carregar system prompt:", error));
+
+            // Carregar Histórico de Conversa
+            const chatHistoryCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/chatHistory`);
+            onSnapshot(chatHistoryCollectionRef, (snapshot) => {
+                const messages = [];
+                snapshot.forEach(doc => {
+                    messages.push(doc.data());
+                });
+                messages.sort((a, b) => (a.timestamp?.toDate() || 0) - (b.timestamp?.toDate() || 0));
+                chatMessages = messages;
+                displayMessages();
+            }, (error) => console.error("Erro ao carregar histórico de chat:", error));
+        }
+
+        async function saveSystemPrompt() {
+            if (!db || !userId) {
+                showCustomNotification("Usuário não autenticado. Não é possível salvar.", "error");
+                return;
+            }
+            setLoadingState(true);
+            try {
+                const systemPromptDocRef = doc(db, `artifacts/${appId}/users/${userId}/settings`, 'systemPromptDoc');
+                await setDoc(systemPromptDocRef, { prompt: systemPromptTextarea.value });
+                systemPrompt = systemPromptTextarea.value; // Atualiza a variável local
+                showCustomNotification('System Prompt salvo com sucesso!');
+            } catch (error) {
+                console.error("Erro ao salvar system prompt:", error);
+                showCustomNotification('Erro ao salvar System Prompt.', 'error');
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            const userMessageContent = userInputField.value.trim();
+
+            if (!userMessageContent && !fileToUpload) return;
+            if (isLoading) return;
+
+            setLoadingState(true);
+
+            let messageToSend = userMessageContent;
+
+            if (fileToUpload) {
+                if (fileToUpload.type.startsWith('text/')) {
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const fileText = event.target.result;
+                        messageToSend = `Conteúdo do arquivo "${fileToUpload.name}":\n\n${fileText}\n\n${userMessageContent}`;
+                        await processAndSendMessage(messageToSend, fileToUpload.name);
+                    };
+                    reader.onerror = (error) => {
+                        console.error("Erro ao ler arquivo:", error);
+                        setLoadingState(false);
+                        showCustomNotification("Erro ao ler o arquivo. Por favor, tente novamente.", "error");
+                    };
+                    reader.readAsText(fileToUpload);
+                } else {
+                    messageToSend = `Arquivo "${fileToUpload.name}" recebido. Tony AI é otimizado para texto e não pode processar este tipo de arquivo diretamente. Sua mensagem: ${userMessageContent}`;
+                    await processAndSendMessage(messageToSend, fileToUpload.name);
+                }
+            } else {
+                await processAndSendMessage(messageToSend);
+            }
+        }
+
+        async function processAndSendMessage(messageContent, fileName = null) {
+            if (!db || !userId) {
+                setLoadingState(false);
+                showCustomNotification("Usuário não autenticado. Não é possível enviar mensagens.", "error");
+                return;
+            }
+
+            const chatHistoryCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/chatHistory`);
+
+            await addDoc(chatHistoryCollectionRef, {
+                role: 'user',
+                text: messageContent,
+                timestamp: serverTimestamp(),
+                fileName: fileName
+            });
+
+            userInputField.value = '';
+            fileToUpload = null;
+            fileUploadedNameSpan.textContent = '';
+
+            let messagesForApi = [];
+            if (systemPrompt) {
+                messagesForApi.push({ role: 'system', content: systemPrompt });
+            }
+            const recentMessages = chatMessages.slice(Math.max(chatMessages.length - 10, 0));
+            recentMessages.forEach(msg => messagesForApi.push({ role: msg.role, content: msg.text }));
+            messagesForApi.push({ role: 'user', content: messageContent });
+
+            try {
+                const apiKey = "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";
+                const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+                const modelId = "moonshotai/Kimi-K2-Instruct";
+
+                const payload = {
+                    model: modelId,
+                    messages: messagesForApi.map(msg => ({ role: msg.role, content: msg.content })),
+                    temperature: 0.7,
+                    max_tokens: 2048,
+                };
+
+                let response;
+                let retries = 0;
+                const maxRetries = 5;
+                const baseDelay = 1000;
+
+                while (retries < maxRetries) {
+                    try {
+                        response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${apiKey}`
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (response.ok) {
+                            break;
+                        } else if (response.status === 429) {
+                            const delay = baseDelay * Math.pow(2, retries);
+                            console.warn(`Rate limit excedido. Tentando novamente em ${delay / 1000}s...`);
+                            await new Promise(res => setTimeout(res, delay));
+                            retries++;
+                        } else {
+                            const errorData = await response.json();
+                            throw new Error(`Erro da API: ${response.status} - ${errorData.message || response.statusText}`);
+                        }
+                    } catch (error) {
+                        if (retries === maxRetries - 1) {
+                            throw error;
+                        }
+                        console.error("Erro na requisição (tentativa de retry):", error);
+                        const delay = baseDelay * Math.pow(2, retries);
+                        await new Promise(res => setTimeout(res, delay));
+                        retries++;
+                    }
+                }
+
+                if (!response || !response.ok) {
+                    throw new Error("Falha na requisição da API após múltiplas tentativas.");
+                }
+
+                const data = await response.json();
+                const assistantMessage = data.choices[0].message.content;
+
+                await addDoc(chatHistoryCollectionRef, {
+                    role: 'assistant',
+                    text: assistantMessage,
+                    timestamp: serverTimestamp()
+                });
+
+            } catch (error) {
+                console.error("Erro ao enviar mensagem para a API Groq:", error);
+                await addDoc(chatHistoryCollectionRef, {
+                    role: 'assistant',
+                    text: 'Desculpe, Tony AI encontrou um erro ao processar sua solicitação. Por favor, tente novamente mais tarde.',
+                    timestamp: serverTimestamp()
+                });
+                showCustomNotification("Erro ao processar sua solicitação.", "error");
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        async function handleNewConversation() {
+            if (!db || !userId) {
+                showCustomNotification("Usuário não autenticado. Não é possível iniciar nova conversa.", "error");
+                return;
+            }
+            // Removido o window.confirm() para evitar o bug no iframe
+            setLoadingState(true);
+            try {
+                const chatHistoryCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/chatHistory`);
+                const querySnapshot = await getDocs(chatHistoryCollectionRef);
+                const deletePromises = [];
+                querySnapshot.forEach((doc) => {
+                    deletePromises.push(deleteDoc(doc.ref));
+                });
+                await Promise.all(deletePromises);
+                chatMessages = []; // Limpa o array local
+                displayMessages(); // Atualiza a UI
+                showCustomNotification('Nova conversa iniciada!');
+            } catch (error) {
+                console.error("Erro ao iniciar nova conversa:", error);
+                showCustomNotification('Erro ao iniciar nova conversa.', 'error');
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        function handleFileChange(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileToUpload = file;
+                fileUploadedNameSpan.textContent = file.name;
+            } else {
+                fileToUpload = null;
+                fileUploadedNameSpan.textContent = '';
+            }
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('DOMContentLoaded', initializeFirebase);
+        chatViewBtn.addEventListener('click', () => setView('chat'));
+        settingsViewBtn.addEventListener('click', () => setView('settings'));
+        newConversationBtn.addEventListener('click', handleNewConversation);
+        chatForm.addEventListener('submit', handleSendMessage);
+        saveSystemPromptBtn.addEventListener('click', saveSystemPrompt);
+        fileUploadInput.addEventListener('change', handleFileChange);
+        closeHtmlPreviewBtn.addEventListener('click', () => htmlPreviewModal.classList.add('hidden'));
+
+        // Inicializa a view padrão
+        setView('chat');
+    </script>
+</body>
+</html>
+
